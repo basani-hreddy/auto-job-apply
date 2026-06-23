@@ -1,0 +1,39 @@
+{
+  "name": "Auto Job Apply",
+  "scope": "x_auto_apply",
+  "version": "1.0.0",
+  "description": "AI-powered job application assistant: ATS resume optimizer, multi-board job scraper, profile Q&A engine, application tracker.",
+  "vendor": "basani-hreddy",
+  "tables": [
+    "x_auto_apply_profile",
+    "x_auto_apply_job",
+    "x_auto_apply_resume",
+    "x_auto_apply_application",
+    "x_auto_apply_profile_detail"
+  ],
+  "script_includes": [
+    "ATSOptimizer",
+    "ResumeBuilder",
+    "JobBoardIntegration",
+    "ProfileManager",
+    "ApplicationTracker"
+  ],
+  "business_rules": [
+    "auto_apply_trigger",
+    "profile_completeness_check",
+    "ats_score_on_job_insert"
+  ],
+  "client_scripts": [
+    "job_form_ats_preview",
+    "profile_form_helper"
+  ],
+  "scheduled_jobs": [
+    "job_board_scanner",
+    "application_status_poller"
+  ],
+  "widgets": [
+    "job_input_widget",
+    "application_tracker_widget"
+  ],
+  "servicenow_min_version": "Tokyo"
+}
