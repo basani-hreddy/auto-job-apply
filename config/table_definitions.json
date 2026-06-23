@@ -1,84 +1,86 @@
 {
+  "_comment": "Table definitions for the Auto Job Apply scoped app (x_1432922_auto_j_0).",
   "tables": [
     {
-      "name": "x_auto_apply_profile",
+      "name": "x_1432922_auto_j_0_profile",
       "label": "Job Seeker Profile",
+      "description": "Stores the candidate's personal info, skills, and base resume",
       "fields": [
-        {"name":"user","type":"reference","ref_table":"sys_user"},
-        {"name":"full_name","type":"string"},
-        {"name":"email","type":"string"},
-        {"name":"phone","type":"string"},
-        {"name":"location","type":"string"},
-        {"name":"linkedin_url","type":"url"},
-        {"name":"summary","type":"journal_input"},
-        {"name":"skills","type":"journal_input"},
-        {"name":"experience","type":"journal_input"},
-        {"name":"education","type":"string"},
-        {"name":"certifications","type":"string"},
-        {"name":"base_resume","type":"journal_input"},
-        {"name":"work_auth","type":"string"},
-        {"name":"years_exp","type":"integer"},
-        {"name":"desired_salary","type":"string"},
-        {"name":"job_type","type":"string"},
-        {"name":"target_role","type":"string"},
-        {"name":"active","type":"boolean","default":true}
+        { "column": "u_full_name",      "type": "string",  "label": "Full Name" },
+        { "column": "u_email",          "type": "string",  "label": "Email Address" },
+        { "column": "u_phone",          "type": "string",  "label": "Phone Number" },
+        { "column": "u_location",       "type": "string",  "label": "Location (City, State)" },
+        { "column": "u_linkedin_url",   "type": "string",  "label": "LinkedIn URL" },
+        { "column": "u_target_role",    "type": "string",  "label": "Target Role / Title" },
+        { "column": "u_years_exp",      "type": "string",  "label": "Years of Experience" },
+        { "column": "u_work_auth",      "type": "string",  "label": "Work Authorization" },
+        { "column": "u_desired_salary", "type": "string",  "label": "Desired Salary Range" },
+        { "column": "u_job_type",       "type": "string",  "label": "Job Type (Full-time/Contract)" },
+        { "column": "u_skills",         "type": "string",  "max_length": 4000,  "label": "Skills" },
+        { "column": "u_summary",        "type": "string",  "max_length": 4000,  "label": "Professional Summary" },
+        { "column": "u_experience",     "type": "string",  "max_length": 65536, "label": "Work Experience" },
+        { "column": "u_education",      "type": "string",  "max_length": 4000,  "label": "Education" },
+        { "column": "u_base_resume",    "type": "string",  "max_length": 65536, "label": "Base Resume Text" },
+        { "column": "u_active",         "type": "boolean", "label": "Active", "default": true }
       ]
     },
     {
-      "name":"x_auto_apply_job",
-      "label":"Job Listing",
-      "fields":[
-        {"name":"profile","type":"reference","ref_table":"x_auto_apply_profile"},
-        {"name":"title","type":"string"},
-        {"name":"company","type":"string"},
-        {"name":"location","type":"string"},
-        {"name":"description","type":"journal_input"},
-        {"name":"apply_url","type":"url"},
-        {"name":"salary_range","type":"string"},
-        {"name":"source_board","type":"string"},
-        {"name":"posted_date","type":"string"},
-        {"name":"ats_score","type":"integer"},
-        {"name":"ats_missing_preview","type":"string"},
-        {"name":"status","type":"string","choices":["new","ready_to_apply","needs_optimization","applied","rejected"]}
+      "name": "x_1432922_auto_j_0_job",
+      "label": "Job Listing",
+      "description": "Job listings pulled from job boards or entered manually",
+      "fields": [
+        { "column": "u_title",        "type": "string",  "label": "Job Title" },
+        { "column": "u_company",      "type": "string",  "label": "Company" },
+        { "column": "u_location",     "type": "string",  "label": "Location" },
+        { "column": "u_description",  "type": "string",  "max_length": 65536, "label": "Job Description" },
+        { "column": "u_apply_url",    "type": "string",  "label": "Apply URL" },
+        { "column": "u_salary_range", "type": "string",  "label": "Salary Range" },
+        { "column": "u_source_board", "type": "string",  "label": "Source Board (Adzuna, Remotive, etc.)" },
+        { "column": "u_posted_date",  "type": "string",  "label": "Posted Date" },
+        { "column": "u_ats_score",    "type": "integer", "label": "ATS Score (%)" },
+        { "column": "u_status",       "type": "string",  "label": "Status", "choices": ["new","applied","rejected","closed"] },
+        { "column": "u_profile",      "type": "reference", "ref_table": "x_1432922_auto_j_0_profile", "label": "Profile" }
       ]
     },
     {
-      "name":"x_auto_apply_resume",
-      "label":"ATS-Optimized Resume",
-      "fields":[
-        {"name":"job","type":"reference","ref_table":"x_auto_apply_job"},
-        {"name":"profile","type":"reference","ref_table":"x_auto_apply_profile"},
-        {"name":"ats_score","type":"integer"},
-        {"name":"matched_keywords","type":"string"},
-        {"name":"missing_keywords","type":"string"},
-        {"name":"optimized_resume","type":"journal_input"},
-        {"name":"generated_on","type":"glide_date_time"}
+      "name": "x_1432922_auto_j_0_resume",
+      "label": "ATS Resume",
+      "description": "ATS-optimized resume versions generated per job listing",
+      "fields": [
+        { "column": "u_job",              "type": "reference", "ref_table": "x_1432922_auto_j_0_job",     "label": "Job" },
+        { "column": "u_profile",          "type": "reference", "ref_table": "x_1432922_auto_j_0_profile", "label": "Profile" },
+        { "column": "u_ats_score",        "type": "integer", "label": "ATS Score (%)" },
+        { "column": "u_matched_keywords", "type": "string",  "max_length": 4000,  "label": "Matched Keywords" },
+        { "column": "u_missing_keywords", "type": "string",  "max_length": 4000,  "label": "Missing Keywords (Gaps)" },
+        { "column": "u_optimized_resume", "type": "string",  "max_length": 65536, "label": "Optimized Resume Text" },
+        { "column": "u_generated_on",     "type": "glide_date_time", "label": "Generated On" }
       ]
     },
     {
-      "name":"x_auto_apply_application",
-      "label":"Job Application",
-      "fields":[
-        {"name":"profile","type":"reference","ref_table":"x_auto_apply_profile"},
-        {"name":"job","type":"reference","ref_table":"x_auto_apply_job"},
-        {"name":"resume_used","type":"reference","ref_table":"x_auto_apply_resume"},
-        {"name":"status","type":"string","choices":["applied","screening","interview","offer","rejected","withdrawn","offer_accepted"]},
-        {"name":"applied_on","type":"glide_date_time"},
-        {"name":"follow_up_date","type":"glide_date_time"},
-        {"name":"follow_up_sent","type":"boolean","default":false},
-        {"name":"interview_date","type":"glide_date_time"},
-        {"name":"notes","type":"journal_input"}
+      "name": "x_1432922_auto_j_0_application",
+      "label": "Job Application",
+      "description": "Tracks each application with status and follow-up dates",
+      "fields": [
+        { "column": "u_profile",        "type": "reference", "ref_table": "x_1432922_auto_j_0_profile", "label": "Profile" },
+        { "column": "u_job",            "type": "reference", "ref_table": "x_1432922_auto_j_0_job",     "label": "Job" },
+        { "column": "u_resume_used",    "type": "reference", "ref_table": "x_1432922_auto_j_0_resume",  "label": "Resume Used" },
+        { "column": "u_status",         "type": "string",  "label": "Status", "choices": ["applied","interviewing","offered","rejected","withdrawn"] },
+        { "column": "u_applied_on",     "type": "glide_date_time", "label": "Applied On" },
+        { "column": "u_follow_up_date", "type": "glide_date_time", "label": "Follow-Up Date" },
+        { "column": "u_follow_up_sent", "type": "boolean", "label": "Follow-Up Sent", "default": false },
+        { "column": "u_notes",          "type": "string",  "max_length": 4000, "label": "Notes" }
       ]
     },
     {
-      "name":"x_auto_apply_profile_detail",
-      "label":"Profile Detail (Q&A)",
-      "fields":[
-        {"name":"profile","type":"reference","ref_table":"x_auto_apply_profile"},
-        {"name":"field_name","type":"string"},
-        {"name":"question","type":"string"},
-        {"name":"answer","type":"journal_input"},
-        {"name":"answered","type":"boolean","default":false}
+      "name": "x_1432922_auto_j_0_profile_detail",
+      "label": "Profile Detail Request",
+      "description": "Q&A records for collecting missing profile fields",
+      "fields": [
+        { "column": "u_profile",    "type": "reference", "ref_table": "x_1432922_auto_j_0_profile", "label": "Profile" },
+        { "column": "u_field_name", "type": "string",  "label": "Field Name" },
+        { "column": "u_question",   "type": "string",  "label": "Question" },
+        { "column": "u_answer",     "type": "string",  "max_length": 65536, "label": "Answer" },
+        { "column": "u_answered",   "type": "boolean", "label": "Answered", "default": false }
       ]
     }
   ]
