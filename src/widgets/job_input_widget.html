@@ -1,0 +1,54 @@
+<!-- Widget: Auto Apply Job Input -->
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title"><i class="fa fa-bolt"></i> Auto Apply &#mdash; Paste Job Description</h3>
+  </div>
+  <div class="panel-body">
+    <div class="text-center mb-3" ng-if="c.data.score !== null">
+      <div class="ats-ring" ng-class="c.data.score>=85?'ring-green':c.data.score>=60?'ring-orange':'ring-red'">
+        <span class="ats-number">{{c.data.score}}%</span>
+        <span class="ats-label">ATS Match</span>
+      </div>
+      <p class="text-muted mt-2"><strong>Matched:</strong> {{c.data.matched.join(', ')}}</p>
+      <p class="text-danger" ng-if="c.data.missing.length"><strong>Missing:</strong> {{c.data.missing.slice(0,8).join(', ')}}<span ng-if="c.data.missing.length>8"> +{{c.data.missing.length-8}} more</span></p>
+    </div>
+    <div class="form-group">
+      <label>Job URL <small class="text-muted">(optional)</small></label>
+      <input type="url" class="form-control" ng-model="c.data.apply_url" placeholder="https://www.indeed.com/viewjob?jk=...">
+    </div>
+    <div class="row">
+      <div class="col-sm-6"><div class="form-group"><label>Job Title *</label><input type="text" class="form-control" ng-model="c.data.title" placeholder="Senior Developer"></div></div>
+      <div class="col-sm-6"><div class="form-group"><label>Company *</label><input type="text" class="form-control" ng-model="c.data.company" placeholder="Acme Corp"></div></div>
+    </div>
+    <div class="form-group">
+      <label>Job Description *</label>
+      <textarea class="form-control" rows="10" ng-model="c.data.description" placeholder="Paste the full job description here..." ng-change="c.onDescriptionChange()"></textarea>
+      <small class="text-muted" ng-if="c.data.keyword_count">{{c.data.keyword_count}} keywords detected</small>
+    </div>
+    <div class="text-right">
+      <button class="btn btn-default mr-2" ng-click="c.analyzeOnly()"><i class="fa fa-search"></i> Analyze Only</button>
+      <button class="btn btn-primary" ng-click="c.submitJob()" ng-disabled="!c.data.title||!c.data.company||!c.data.description"><i class="fa fa-paper-plane"></i> Auto Apply</button>
+    </div>
+    <div class="alert alert-success mt-3" ng-if="c.data.successMsg">{{c.data.successMsg}}</div>
+    <div class="alert alert-danger mt-3" ng-if="c.data.errorMsg">{{c.data.errorMsg}}</div>
+    <div class="panel panel-warning mt-3" ng-if="c.data.missingFields.length">
+      <div class="panel-heading">Profile Incomplete - Please Fill In:</div>
+      <div class="panel-body">
+        <div ng-repeat="q in c.data.missingFields" class="form-group">
+          <label>{{q.question}}</label>
+          <input type="text" class="form-control" ng-model="q.answer" placeholder="Your answer">
+        </div>
+        <button class="btn btn-warning" ng-click="c.saveDetails()">Save Details</button>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+.ats-ring{display:inline-block;width:110px;height:110px;border-radius:50%;line-height:110px;text-align:center;position:relative}
+.ring-green{background:radial-gradient(circle,#d4edda 60%,#28a745 100%);border:6px solid #28a745}
+.ring-orange{background:radial-gradient(circle,#fff3cd 60%,#fd7e14 100%);border:6px solid #fd7e14}
+.ring-red{background:radial-gradient(circle,#f8d7da 60%,#dc3545 100%);border:6px solid #dc3545}
+.ats-number{display:block;font-size:2em;font-weight:bold;line-height:1;padding-top:28px}
+.ats-label{display:block;font-size:0.7em;color:#555}
+.mb-3{margin-bottom:1rem}.mt-2{margin-top:0.5rem}.mt-3{margin-top:1rem}.mr-2{margin-right:0.5rem}
+</style>
