@@ -1,58 +1,24 @@
-// Table: x_auto_apply_job
-// Name: Auto Apply Trigger
-// When: After Insert
-// Condition: current.status == 'new'
-// Description: On new job insert — run ATS optimization and (if profile complete) submit application.
+// Table: x_1432922_auto_j_0_job
+// Name: auto_apply_trigger
+// When: After | Insert
+// Description: Auto-creates an Application record when ATS score >= min_ats_score
+//   AND profile is complete (all 15 required fields filled).
 
 (function executeRule(current, previous) {
-    var profileSysId = current.profile.toString();
-    if (!profileSysId) return;
-
-    try {
-        // 1. Check profile completeness
-        var pm = new ProfileManager();
-        var missing = pm.getMissingFields(profileSysId);
-        if (missing.length > 0) {
-            pm.createDetailRequests(profileSysId, missing);
-            gs.info('AutoApply: Profile incomplete, created ' + missing.length + ' detail requests for profile ' + profileSysId);
-        }
-
-        // 2. ATS optimization (always run, regardless of completeness)
-        var rb = new ResumeBuilder();
-        var result = rb.buildForJob(profileSysId, current.getUniqueValue());
-
-        if (!result) {
-            gs.error('AutoApply: ResumeBuilder returned null for job ' + current.getUniqueValue());
-            return;
-        }
-
-        // Update job with ATS score
-        var jobGr = new GlideRecord('x_auto_apply_job');
-        if (jobGr.get(current.getUniqueValue())) {
-            jobGr.ats_score = result.score;
-            jobGr.status    = result.score >= 70 ? 'ready_to_apply' : 'needs_optimization';
-            jobGr.update();
-        }
-
-        gs.info('AutoApply: Job "' + current.title + '" ATS score = ' + result.score + '%');
-
-        // 3. If profile is complete AND score >= 70, auto-create application record
-        if (missing.length === 0 && result.score >= 70) {
-            // Get the resume sys_id just saved
-            var resumeGr = new GlideRecord('x_auto_apply_resume');
-            resumeGr.addQuery('job', current.getUniqueValue());
-            resumeGr.orderByDesc('generated_on');
-            resumeGr.setLimit(1);
-            resumeGr.query();
-            var resumeSysId = resumeGr.next() ? resumeGr.getUniqueValue() : '';
-
-            var tracker = new ApplicationTracker();
-            var appId = tracker.createApplication(profileSysId, current.getUniqueValue(), resumeSysId);
-            gs.info('AutoApply: Application ' + appId + ' created for job ' + current.title);
-        }
-
-    } catch(e) {
-        gs.error('AutoApply trigger error: ' + e.message);
+    var minScore = parseInt(gs.getProperty('x_1432922_auto_j_0.min_ats_score','70'));
+    var atsScore = parseInt(current.getValue('u_ats_score')||'0');
+    if(atsScore < minScore) return;
+    var profileSysId = current.getValue('u_profile');
+    if(!profileSysId) return;
+    var pm = new ProfileManager(profileSysId);
+    if(!pm.isComplete()){
+        gs.info('Auto-apply skipped for "'+current.u_title+'": profile '+pm.getCompletionPct()+'% complete');
+        return;
     }
-
+    var at = new ApplicationTracker();
+    var appId = at.createApplication(profileSysId, current.getUniqueValue(), null);
+    if(appId){
+        gs.info('AUTO-APPLIED to "'+current.u_title+'" (score: '+atsScore+'%)');
+        current.u_status = 'applied'; current.update();
+    }
 })(current, previous);
