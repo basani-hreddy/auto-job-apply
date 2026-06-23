@@ -1,30 +1,14 @@
-// Table: x_auto_apply_job
-// Name: Display ATS Score on Save
-// When: Before Insert
-// Description: Quick-score the pasted JD against the profile base resume so the
-//              record shows an initial ATS score immediately after save (before async BR runs).
+// Table: x_1432922_auto_j_0_job
+// Name: ats_score_on_job_insert
+// When: After | Insert
+// Description: Runs ResumeBuilder to score resume whenever a new job is saved.
 
 (function executeRule(current, previous) {
-    var profileSysId = current.profile.toString();
-    if (!profileSysId || !current.description.toString()) return;
-
-    try {
-        var prof = new GlideRecord('x_auto_apply_profile');
-        if (!prof.get(profileSysId)) return;
-
-        var baseResume = prof.base_resume.toString() || prof.skills.toString();
-        if (!baseResume) return;
-
-        var opt = new ATSOptimizer();
-        var keywords = opt.extractKeywords(current.description.toString(), 40);
-        var analysis = opt.scoreResume(baseResume, keywords);
-
-        current.ats_score = analysis.score;
-        // Store missing keywords preview (first 10)
-        current.ats_missing_preview = analysis.missing.slice(0, 10).join(', ');
-
-    } catch(e) {
-        gs.warn('ATS before-insert score error: ' + e.message);
-    }
-
+    var jdText = current.getValue('u_description') || '';
+    if(!jdText || jdText.length < 50) return;
+    var profileSysId = current.getValue('u_profile');
+    if(!profileSysId) return;
+    var rb = new ResumeBuilder();
+    var res = rb.buildForJob(profileSysId, current.getUniqueValue());
+    if(res) gs.info('ATS scored "'+current.u_title+'": '+res.score+'%');
 })(current, previous);
