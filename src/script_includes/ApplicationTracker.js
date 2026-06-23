@@ -1,59 +1,68 @@
 // Table: sys_script_include
-// Name: ApplicationTracker | Scope: x_auto_apply
+// Name: ApplicationTracker
+// Scope: x_1432922_auto_j_0
+// Description: Creates and manages application records with status tracking and follow-up reminders.
+//   createApplication(profileSysId, jobSysId, resumeSysId) -> sys_id
+//   updateStatus(appSysId, newStatus, notes)               -> boolean
+//   getOpenApplications(profileSysId)                      -> object[]
+//   getDueFollowUps()                                      -> object[]
+//   getStats(profileSysId)                                 -> {total, applied, interviewing, ...}
+
 var ApplicationTracker = Class.create();
 ApplicationTracker.prototype = {
-    initialize: function() {},
-    createApplication: function(profileSysId,jobSysId,resumeSysId) {
-        var gr=new GlideRecord('x_auto_apply_application'); gr.initialize();
-        gr.profile=profileSysId; gr.job=jobSysId; gr.resume_used=resumeSysId;
-        gr.status='applied'; gr.applied_on=new GlideDateTime();
-        gr.follow_up_date=this._addDays(new GlideDateTime(),7);
-        return gr.insert();
+    initialize: function() {
+        this.followUpDays = parseInt(gs.getProperty('x_1432922_auto_j_0.follow_up_days','7'));
     },
-    updateStatus: function(appSysId,newStatus,notes) {
-        var gr=new GlideRecord('x_auto_apply_application');
-        if (!gr.get(appSysId)) return false;
-        gr.status=newStatus;
-        if (notes) gr.notes=(gr.notes.toString()?gr.notes+'\n':'')+new GlideDateTime()+': '+notes;
-        if (newStatus==='interview') gr.interview_date=this._addDays(new GlideDateTime(),3);
-        gr.update(); return true;
+
+    createApplication: function(profileSysId, jobSysId, resumeSysId) {
+        var dup = new GlideRecord('x_1432922_auto_j_0_application');
+        dup.addQuery('u_profile', profileSysId);
+        dup.addQuery('u_job', jobSysId); dup.query();
+        if(dup.next()) return dup.getUniqueValue();
+        var a = new GlideRecord('x_1432922_auto_j_0_application');
+        a.initialize();
+        a.u_profile=profileSysId; a.u_job=jobSysId;
+        if(resumeSysId) a.u_resume_used=resumeSysId;
+        a.u_status='applied'; a.u_applied_on=new GlideDateTime();
+        var fu = new GlideDateTime(); fu.addDaysUTC(this.followUpDays);
+        a.u_follow_up_date=fu; a.u_follow_up_sent=false;
+        return a.insert();
     },
+
+    updateStatus: function(appSysId, newStatus, notes) {
+        var a = new GlideRecord('x_1432922_auto_j_0_application');
+        if(a.get(appSysId)){ a.u_status=newStatus; if(notes) a.u_notes=notes; a.update(); return true; }
+        return false;
+    },
+
     getOpenApplications: function(profileSysId) {
-        var results=[];
-        var gr=new GlideRecord('x_auto_apply_application');
-        gr.addQuery('profile',profileSysId);
-        gr.addQuery('status','NOT IN','rejected,withdrawn,offer_accepted');
-        gr.orderByDesc('applied_on'); gr.query();
-        while(gr.next()) {
-            results.push({sys_id:gr.getUniqueValue(),job_title:gr.job.getDisplayValue(),company:gr.job.company.toString(),status:gr.status.toString(),applied_on:gr.applied_on.toString(),follow_up:gr.follow_up_date.toString()});
-        }
-        return results;
+        var apps = [];
+        var a = new GlideRecord('x_1432922_auto_j_0_application');
+        a.addQuery('u_profile', profileSysId);
+        a.addQuery('u_status','IN','applied,interviewing,offered');
+        a.orderByDesc('u_applied_on'); a.query();
+        while(a.next()) apps.push({sys_id:a.getUniqueValue(),status:a.u_status.toString(),job:a.u_job.getDisplayValue(),applied:a.u_applied_on.toString()});
+        return apps;
     },
+
     getDueFollowUps: function() {
-        var results=[]; var today=new GlideDateTime();
-        var gr=new GlideRecord('x_auto_apply_application');
-        gr.addQuery('follow_up_date','<=',today);
-        gr.addQuery('status','IN','applied,screening');
-        gr.addQuery('follow_up_sent',false); gr.query();
-        while(gr.next()) results.push({sys_id:gr.getUniqueValue(),email:gr.profile.email.toString(),job_title:gr.job.getDisplayValue(),company:gr.job.company.toString()});
-        return results;
+        var now = new GlideDateTime(), apps = [];
+        var a = new GlideRecord('x_1432922_auto_j_0_application');
+        a.addQuery('u_follow_up_sent',false);
+        a.addQuery('u_status','applied');
+        a.addQuery('u_follow_up_date','<=',now.getValue()); a.query();
+        while(a.next()) apps.push({sys_id:a.getUniqueValue(),job:a.u_job.getDisplayValue(),profile:a.u_profile.getDisplayValue()});
+        return apps;
     },
-    markFollowUpSent: function(appSysId) {
-        var gr=new GlideRecord('x_auto_apply_application');
-        if (!gr.get(appSysId)) return;
-        gr.follow_up_sent=true; gr.follow_up_date=this._addDays(new GlideDateTime(),7);
-        gr.update();
-    },
-    _addDays: function(gdt,days) { var d=new GlideDateTime(gdt); d.addDaysLocalTime(days); return d; },
+
     getStats: function(profileSysId) {
-        var statuses=['applied','screening','interview','offer','rejected']; var stats={};
-        statuses.forEach(function(s){
-            var ga=new GlideAggregate('x_auto_apply_application');
-            ga.addQuery('profile',profileSysId); ga.addQuery('status',s);
-            ga.addAggregate('COUNT'); ga.query();
-            stats[s]=ga.next()?parseInt(ga.getAggregate('COUNT'),10):0;
-        });
+        var agg = new GlideAggregate('x_1432922_auto_j_0_application');
+        agg.addQuery('u_profile',profileSysId);
+        agg.addAggregate('COUNT'); agg.groupBy('u_status'); agg.query();
+        var stats = {total:0};
+        while(agg.next()){ var s=agg.u_status.toString(); var c=parseInt(agg.getAggregate('COUNT')); stats[s]=c; stats.total+=c; }
         return stats;
     },
+
     type: 'ApplicationTracker'
 };
