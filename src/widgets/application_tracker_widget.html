@@ -1,0 +1,54 @@
+<!-- Widget: Application Tracker Dashboard -->
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title"><i class="fa fa-list-alt"></i> My Applications</h3>
+  </div>
+  <div class="panel-body">
+
+    <!-- Stats row -->
+    <div class="row text-center mb-3">
+      <div class="col-xs-2 stat-box"><div class="stat-num">{{c.data.stats.applied}}</div><div>Applied</div></div>
+      <div class="col-xs-2 stat-box stat-info"><div class="stat-num">{{c.data.stats.screening}}</div><div>Screening</div></div>
+      <div class="col-xs-2 stat-box stat-warning"><div class="stat-num">{{c.data.stats.interview}}</div><div>Interview</div></div>
+      <div class="col-xs-2 stat-box stat-success"><div class="stat-num">{{c.data.stats.offer}}</div><div>Offer</div></div>
+      <div class="col-xs-2 stat-box stat-danger"><div class="stat-num">{{c.data.stats.rejected}}</div><div>Rejected</div></div>
+    </div>
+
+    <!-- Application list -->
+    <table class="table table-striped table-hover">
+      <thead>
+        <tr><th>Job Title</th><th>Company</th><th>Status</th><th>Applied</th><th>Follow-up</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        <tr ng-repeat="app in c.data.applications">
+          <td>{{app.job_title}}</td>
+          <td>{{app.company}}</td>
+          <td><span class="label" ng-class="c.statusClass(app.status)">{{app.status}}</span></td>
+          <td>{{app.applied_on | date:'MMM d'}}</td>
+          <td>{{app.follow_up | date:'MMM d'}}</td>
+          <td>
+            <select class="form-control input-sm" ng-model="app.new_status" ng-change="c.updateStatus(app)">
+              <option value="">Update status</option>
+              <option value="screening">Screening</option>
+              <option value="interview">Interview</option>
+              <option value="offer">Offer</option>
+              <option value="rejected">Rejected</option>
+              <option value="withdrawn">Withdraw</option>
+            </select>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="text-center text-muted" ng-if="!c.data.applications.length">No open applications yet.</p>
+  </div>
+</div>
+
+<style>
+.stat-box { padding:10px; border:1px solid #ddd; border-radius:4px; margin:2px; }
+.stat-num  { font-size:2rem; font-weight:bold; }
+.stat-info    { border-color:#17a2b8; color:#17a2b8; }
+.stat-warning { border-color:#ffc107; color:#856404; }
+.stat-success { border-color:#28a745; color:#28a745; }
+.stat-danger  { border-color:#dc3545; color:#dc3545; }
+.mb-3 { margin-bottom:1rem; }
+</style>
