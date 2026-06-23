@@ -1,109 +1,89 @@
 // Table: sys_script_include
-// Name: JobBoardIntegration | Scope: x_auto_apply
-// Description: REST integrations with Indeed, Dice, Jooble, JobAI job boards.
-// Configure API keys in System Properties:
-//   x_auto_apply.jooble_api_key
-//   x_auto_apply.indeed_publisher_id
-//   x_auto_apply.rapidapi_key  (used for Dice via RapidAPI)
+// Name: JobBoardIntegration
+// Scope: x_1432922_auto_j_0
+// Description: Fetches jobs from Remotive (free, no key) and Adzuna (free tier, 250 calls/day).
+//
+// Required system properties (set in ServiceNow — never hardcode keys here):
+//   x_1432922_auto_j_0.adzuna_app_id   -- from developer.adzuna.com
+//   x_1432922_auto_j_0.adzuna_api_key  -- from developer.adzuna.com
 
 var JobBoardIntegration = Class.create();
 JobBoardIntegration.prototype = {
     initialize: function() {
-        this.joobleKey    = gs.getProperty('x_auto_apply.jooble_api_key', '');
-        this.indeedKey    = gs.getProperty('x_auto_apply.indeed_publisher_id', '');
-        this.rapidKey     = gs.getProperty('x_auto_apply.rapidapi_key', '');
-        this.defaultLimit = 20;
+        this.adzunaAppId  = gs.getProperty('x_1432922_auto_j_0.adzuna_app_id', '');
+        this.adzunaApiKey = gs.getProperty('x_1432922_auto_j_0.adzuna_api_key', '');
     },
 
-    searchAll: function(query, location) {
-        var results = [];
-        try { results = results.concat(this.searchJooble(query, location)); } catch(e) { gs.warn('Jooble: ' + e); }
-        try { results = results.concat(this.searchIndeed(query, location)); } catch(e) { gs.warn('Indeed: ' + e); }
-        try { results = results.concat(this.searchDice(query, location));  } catch(e) { gs.warn('Dice: ' + e); }
-        var seen = {};
-        return results.filter(function(j) {
-            var key = (j.title + j.company).toLowerCase().replace(/\s/g,'');
-            if (seen[key]) return false;
-            seen[key] = true; return true;
+    searchAll: function(keywords, location, profileSysId) {
+        var jobs = [];
+        try { jobs = jobs.concat(this.searchRemotive(keywords)); } catch(e) { gs.warn('Remotive: '+e); }
+        try {
+            if(this.adzunaAppId && this.adzunaApiKey)
+                jobs = jobs.concat(this.searchAdzuna(keywords, location));
+        } catch(e) { gs.warn('Adzuna: '+e); }
+        var seen = {}, deduped = [];
+        jobs.forEach(function(j){
+            var key = (j.title+'|'+j.company).toLowerCase();
+            if(!seen[key]){ seen[key]=true; deduped.push(j); }
         });
+        return this.saveJobs(deduped, profileSysId);
     },
 
-    searchJooble: function(query, location) {
-        if (!this.joobleKey) { gs.warn('Jooble API key not configured'); return []; }
+    searchRemotive: function(keywords) {
         var rm = new sn_ws.RESTMessageV2();
-        rm.setEndpoint('https://jooble.org/api/' + this.joobleKey);
-        rm.setHttpMethod('POST');
-        rm.setRequestHeader('Content-Type', 'application/json');
-        rm.setRequestBody(JSON.stringify({keywords: query, location: location, page: 1}));
-        var resp = rm.execute();
-        var data = JSON.parse(resp.getBody() || '{}');
-        var jobs = data.jobs || [];
-        return jobs.map(function(j) {
-            return {board:'Jooble', title:j.title||'', company:j.company||'', location:j.location||'',
-                    description:j.snippet||'', url:j.link||'', salary:j.salary||'', posted:j.updated||''};
-        });
-    },
-
-    searchIndeed: function(query, location) {
-        if (!this.indeedKey) { gs.warn('Indeed publisher ID not configured'); return []; }
-        var rm = new sn_ws.RESTMessageV2();
-        rm.setEndpoint('https://api.indeed.com/ads/apisearch');
+        rm.setEndpoint('https://remotive.com/api/remote-jobs?search='+encodeURIComponent(keywords)+'&limit=20');
         rm.setHttpMethod('GET');
-        rm.setQueryParameter('publisher', this.indeedKey);
-        rm.setQueryParameter('q', query);
-        rm.setQueryParameter('l', location);
-        rm.setQueryParameter('format', 'json');
-        rm.setQueryParameter('v', '2');
-        rm.setQueryParameter('limit', String(this.defaultLimit));
         var resp = rm.execute();
-        var data = JSON.parse(resp.getBody() || '{}');
-        var results = data.results || [];
-        return results.map(function(j) {
-            return {board:'Indeed', title:j.jobtitle||'', company:j.company||'', location:j.formattedLocation||'',
-                    description:j.snippet||'', url:j.url||'', salary:'', posted:j.date||''};
+        if(resp.getStatusCode()!==200) return [];
+        var data = JSON.parse(resp.getBody());
+        return (data.jobs||[]).map(function(j){
+            return {title:j.title, company:j.company_name,
+                    location:j.candidate_required_location||'Remote',
+                    description:j.description ? j.description.replace(/<[^>]+>/g,' ').substring(0,3000) : '',
+                    apply_url:j.url, salary_range:j.salary||'',
+                    source_board:'Remotive', posted_date:j.publication_date||''};
         });
     },
 
-    searchDice: function(query, location) {
-        if (!this.rapidKey) { gs.warn('RapidAPI key not configured'); return []; }
+    searchAdzuna: function(keywords, location) {
+        var loc = location ? '&where='+encodeURIComponent(location) : '';
+        var url = 'https://api.adzuna.com/v1/api/jobs/us/search/1'
+            +'?app_id='+this.adzunaAppId+'&app_key='+this.adzunaApiKey
+            +'&what='+encodeURIComponent(keywords)+loc+'&results_per_page=20&content-type=application/json';
         var rm = new sn_ws.RESTMessageV2();
-        rm.setEndpoint('https://jsearch.p.rapidapi.com/search');
-        rm.setHttpMethod('GET');
-        rm.setRequestHeader('X-RapidAPI-Key', this.rapidKey);
-        rm.setRequestHeader('X-RapidAPI-Host', 'jsearch.p.rapidapi.com');
-        rm.setQueryParameter('query', query + ' ' + location);
-        rm.setQueryParameter('page', '1');
-        rm.setQueryParameter('num_pages', '1');
-        rm.setQueryParameter('date_posted', 'week');
+        rm.setEndpoint(url); rm.setHttpMethod('GET');
         var resp = rm.execute();
-        var data = JSON.parse(resp.getBody() || '{}');
-        var items = data.data || [];
-        return items.map(function(j) {
-            return {board:'Dice/JSearch', title:j.job_title||'', company:j.employer_name||'',
-                    location:(j.job_city||'') + ', ' + (j.job_state||''),
-                    description:j.job_description||'',
-                    url:j.job_apply_link||j.job_google_link||'',
-                    salary:j.job_salary_currency+' '+(j.job_min_salary||'')+'-'+(j.job_max_salary||''),
-                    posted:j.job_posted_at_datetime_utc||''};
+        if(resp.getStatusCode()!==200) return [];
+        var data = JSON.parse(resp.getBody());
+        return (data.results||[]).map(function(j){
+            return {title:j.title, company:j.company?j.company.display_name:'Unknown',
+                    location:j.location?j.location.display_name:'',
+                    description:j.description||'', apply_url:j.redirect_url,
+                    salary_range:j.salary_min?'$'+j.salary_min+' - $'+j.salary_max:'',
+                    source_board:'Adzuna', posted_date:j.created||''};
         });
     },
 
     saveJobs: function(jobs, profileSysId) {
-        var count = 0;
-        jobs.forEach(function(j) {
-            if (j.url) {
-                var dup = new GlideRecord('x_auto_apply_job');
-                dup.addQuery('apply_url', j.url); dup.query();
-                if (dup.next()) return;
-            }
-            var gr = new GlideRecord('x_auto_apply_job'); gr.initialize();
-            gr.profile = profileSysId; gr.title = j.title; gr.company = j.company;
-            gr.location = j.location; gr.description = j.description;
-            gr.apply_url = j.url; gr.salary_range = j.salary;
-            gr.source_board = j.board; gr.posted_date = j.posted; gr.status = 'new';
-            gr.insert(); count++;
+        var saved = 0;
+        jobs.forEach(function(j){
+            if(!j.apply_url) return;
+            var ex = new GlideRecord('x_1432922_auto_j_0_job');
+            ex.addQuery('u_apply_url', j.apply_url); ex.query();
+            if(ex.next()) return;
+            var r = new GlideRecord('x_1432922_auto_j_0_job');
+            if(profileSysId) r.u_profile = profileSysId;
+            r.u_title=(j.title||'').substring(0,200);
+            r.u_company=(j.company||'').substring(0,200);
+            r.u_location=(j.location||'').substring(0,200);
+            r.u_description=j.description||'';
+            r.u_apply_url=j.apply_url;
+            r.u_salary_range=(j.salary_range||'').substring(0,100);
+            r.u_source_board=j.source_board||'';
+            r.u_posted_date=(j.posted_date||'').substring(0,100);
+            r.u_status='new'; r.insert(); saved++;
         });
-        return count;
+        return saved;
     },
 
     type: 'JobBoardIntegration'
