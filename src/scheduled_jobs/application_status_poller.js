@@ -1,27 +1,27 @@
-// Scheduled Job: Application Follow-Up Poller
-// Schedule: Daily at 09:00 (0 9 * * *)
-// Description: Finds applications due for follow-up and sends email notifications.
+// Scheduled Job: application_status_poller
+// Schedule: Daily at 9:00 AM
+// Scope: x_1432922_auto_j_0
+// Description: Emails follow-up reminders for applications where follow_up_date has passed.
+//   Notification email: sys_property x_1432922_auto_j_0.notification_email
 
 (function() {
-    var tracker = new ApplicationTracker();
-    var dueItems = tracker.getDueFollowUps();
-
-    dueItems.forEach(function(item) {
-        // Send follow-up email reminder
-        var email = new GlideEmailOutbound();
-        email.setTo(item.email);
-        email.setSubject('Follow up: ' + item.job_title + ' at ' + item.company);
-        email.setBody(
-            'Hi,\n\n' +
-            'It\'s been 7 days since you applied for the ' + item.job_title + ' position at ' + item.company + '.\n' +
-            'Consider sending a follow-up email to the hiring team.\n\n' +
-            'Your Auto Job Apply tracker.'
-        );
-        email.save();
-
-        tracker.markFollowUpSent(item.sys_id);
-        gs.info('FollowUp: Sent reminder for application ' + item.sys_id);
+    var notifyEmail = gs.getProperty('x_1432922_auto_j_0.notification_email','');
+    if(!notifyEmail){ gs.warn('notification_email property not set. Skipping.'); return; }
+    var at = new ApplicationTracker();
+    var due = at.getDueFollowUps();
+    if(due.length===0){ gs.info('No follow-ups due today.'); return; }
+    var body = 'Follow-up reminders for '+due.length+' application(s):\n\n';
+    due.forEach(function(app){
+        body += '- '+app.job+'\n  Action: Send follow-up or check status\n\n';
     });
-
-    gs.info('FollowUp: Processed ' + dueItems.length + ' follow-up reminders.');
+    body += 'View all: x_1432922_auto_j_0_application_list.do';
+    var email = new GlideEmailOutbound();
+    email.setTo(notifyEmail);
+    email.setSubject('[Auto Job Apply] '+due.length+' follow-up(s) due today');
+    email.setBody(body); email.save();
+    due.forEach(function(app){
+        var a = new GlideRecord('x_1432922_auto_j_0_application');
+        if(a.get(app.sys_id)){ a.u_follow_up_sent=true; a.update(); }
+    });
+    gs.info('Sent '+due.length+' follow-up reminder(s) to '+notifyEmail);
 })();
