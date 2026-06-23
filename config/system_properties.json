@@ -1,43 +1,12 @@
 {
+  "_comment": "System properties for x_1432922_auto_j_0. Set in ServiceNow: System Properties > search x_1432922_auto_j_0. Never hardcode API keys in source code.",
   "properties": [
-    {
-      "name": "x_auto_apply.jooble_api_key",
-      "value": "",
-      "description": "Jooble API key — get free at https://jooble.org/api/about",
-      "type": "string",
-      "private": true
-    },
-    {
-      "name": "x_auto_apply.indeed_publisher_id",
-      "value": "",
-      "description": "Indeed Publisher ID — register at https://ads.indeed.com/",
-      "type": "string",
-      "private": true
-    },
-    {
-      "name": "x_auto_apply.rapidapi_key",
-      "value": "",
-      "description": "RapidAPI key for JSearch (covers Dice, LinkedIn, Glassdoor) — https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch",
-      "type": "string",
-      "private": true
-    },
-    {
-      "name": "x_auto_apply.min_ats_score",
-      "value": "70",
-      "description": "Minimum ATS score (%) to auto-submit an application",
-      "type": "integer"
-    },
-    {
-      "name": "x_auto_apply.follow_up_days",
-      "value": "7",
-      "description": "Days after application before follow-up reminder is sent",
-      "type": "integer"
-    },
-    {
-      "name": "x_auto_apply.scan_interval_hours",
-      "value": "6",
-      "description": "How often (hours) the job board scanner runs",
-      "type": "integer"
-    }
+    { "name": "x_1432922_auto_j_0.adzuna_app_id",      "type": "string",  "default": "", "description": "Adzuna App ID — register free at developer.adzuna.com (250 calls/day)" },
+    { "name": "x_1432922_auto_j_0.adzuna_api_key",     "type": "string",  "default": "", "description": "Adzuna API Key — from developer.adzuna.com" },
+    { "name": "x_1432922_auto_j_0.min_ats_score",      "type": "integer", "default": "70", "description": "Minimum ATS score (%) to auto-apply. Range: 0-100." },
+    { "name": "x_1432922_auto_j_0.follow_up_days",     "type": "integer", "default": "7",  "description": "Days after applying before a follow-up reminder fires." },
+    { "name": "x_1432922_auto_j_0.notification_email", "type": "string",  "default": "", "description": "Email address for follow-up reminders. Set to your email — never commit this value." },
+    { "name": "x_1432922_auto_j_0.search_keywords",    "type": "string",  "default": "ServiceNow Developer", "description": "Keywords for the scheduled job scanner." },
+    { "name": "x_1432922_auto_j_0.search_location",    "type": "string",  "default": "", "description": "Location filter for job searches (e.g. 'Dallas TX'). Blank = remote/any." }
   ]
 }
