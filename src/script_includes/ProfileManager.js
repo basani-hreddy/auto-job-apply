@@ -1,61 +1,78 @@
 // Table: sys_script_include
-// Name: ProfileManager | Scope: x_auto_apply
+// Name: ProfileManager
+// Scope: x_1432922_auto_j_0
+// Description: Detects missing profile fields and manages the Q&A detail-request flow.
+//   getMissingFields()          -> string[]
+//   isComplete()                -> boolean
+//   getCompletionPct()          -> number (0-100)
+//   createDetailRequests()      -> number (count created)
+//   answerDetail(field, answer) -> boolean
+
 var ProfileManager = Class.create();
 ProfileManager.prototype = {
-    initialize: function() {
-        this.requiredFields = [
-            {field:'full_name',label:'Full Name'},
-            {field:'email',label:'Email Address'},
-            {field:'phone',label:'Phone Number'},
-            {field:'location',label:'City, State / Country'},
-            {field:'linkedin_url',label:'LinkedIn Profile URL'},
-            {field:'summary',label:'Professional Summary (3-5 sentences)'},
-            {field:'skills',label:'Key Skills (comma-separated)'},
-            {field:'experience',label:'Work Experience (most recent first)'},
-            {field:'education',label:'Education (degree, school, year)'},
-            {field:'certifications',label:'Certifications (optional)'},
-            {field:'base_resume',label:'Paste your base resume text'},
-            {field:'work_auth',label:'Work Authorization (e.g. US Citizen, H1B, OPT)'},
-            {field:'years_exp',label:'Total Years of Experience'},
-            {field:'desired_salary',label:'Desired Salary / Range'},
-            {field:'job_type',label:'Job Type (Full-time, Contract, Remote, Hybrid)'}
-        ];
+    initialize: function(profileSysId) {
+        this.profileId = profileSysId;
+        this.requiredFields = ['u_full_name','u_email','u_phone','u_location','u_linkedin_url',
+            'u_summary','u_skills','u_experience','u_education','u_base_resume',
+            'u_work_auth','u_years_exp','u_desired_salary','u_job_type','u_target_role'];
+        this.fieldLabels = {
+            u_full_name:'Full Name', u_email:'Email Address', u_phone:'Phone Number',
+            u_location:'Location (City, State)', u_linkedin_url:'LinkedIn URL',
+            u_summary:'Professional Summary', u_skills:'Skills (comma separated)',
+            u_experience:'Work Experience', u_education:'Education',
+            u_base_resume:'Base Resume Text',
+            u_work_auth:'Work Authorization (US Citizen, H1B, Green Card, etc.)',
+            u_years_exp:'Years of Experience', u_desired_salary:'Desired Salary Range',
+            u_job_type:'Job Type (Full-time, Contract, etc.)', u_target_role:'Target Role / Title'
+        };
     },
-    getMissingFields: function(profileSysId) {
-        var gr=new GlideRecord('x_auto_apply_profile');
-        if (!gr.get(profileSysId)) return this.requiredFields;
-        var missing=[];
-        this.requiredFields.forEach(function(f) {
-            if (!gr[f.field]||!gr[f.field].toString().trim()) missing.push(f);
+
+    getMissingFields: function() {
+        var missing = [];
+        var p = new GlideRecord('x_1432922_auto_j_0_profile');
+        if(!p.get(this.profileId)) return this.requiredFields;
+        var self = this;
+        this.requiredFields.forEach(function(f){
+            var val = p.getValue(f);
+            if(!val || val.trim()==='') missing.push(f);
         });
         return missing;
     },
-    createDetailRequests: function(profileSysId,missingFields) {
-        var created=[];
-        missingFields.forEach(function(f) {
-            var ex=new GlideRecord('x_auto_apply_profile_detail');
-            ex.addQuery('profile',profileSysId); ex.addQuery('field_name',f.field); ex.addQuery('answered',false); ex.query();
-            if (!ex.next()) {
-                var det=new GlideRecord('x_auto_apply_profile_detail'); det.initialize();
-                det.profile=profileSysId; det.field_name=f.field; det.question=f.label; det.answered=false; det.insert();
-                created.push(f.field);
+
+    isComplete: function() { return this.getMissingFields().length===0; },
+
+    getCompletionPct: function() {
+        var missing = this.getMissingFields().length;
+        return Math.round(((this.requiredFields.length-missing)/this.requiredFields.length)*100);
+    },
+
+    createDetailRequests: function() {
+        var missing = this.getMissingFields();
+        var created = 0, self = this;
+        missing.forEach(function(f){
+            var ex = new GlideRecord('x_1432922_auto_j_0_profile_detail');
+            ex.addQuery('u_profile', self.profileId);
+            ex.addQuery('u_field_name', f);
+            ex.addQuery('u_answered', false); ex.query();
+            if(!ex.next()){
+                var d = new GlideRecord('x_1432922_auto_j_0_profile_detail');
+                d.u_profile=self.profileId; d.u_field_name=f;
+                d.u_question='Please provide your '+(self.fieldLabels[f]||f);
+                d.u_answered=false; d.insert(); created++;
             }
         });
         return created;
     },
-    answerDetail: function(detailSysId,answer) {
-        var det=new GlideRecord('x_auto_apply_profile_detail');
-        if (!det.get(detailSysId)) return false;
-        det.answer=answer; det.answered=true; det.update();
-        var prof=new GlideRecord('x_auto_apply_profile');
-        if (prof.get(det.profile.toString())) { prof[det.field_name.toString()]=answer; prof.update(); }
+
+    answerDetail: function(fieldName, answer) {
+        var p = new GlideRecord('x_1432922_auto_j_0_profile');
+        if(p.get(this.profileId)){ p.setValue(fieldName, answer); p.update(); }
+        var d = new GlideRecord('x_1432922_auto_j_0_profile_detail');
+        d.addQuery('u_profile', this.profileId);
+        d.addQuery('u_field_name', fieldName); d.query();
+        if(d.next()){ d.u_answered=true; d.update(); }
         return true;
     },
-    isComplete: function(profileSysId) { return this.getMissingFields(profileSysId).length===0; },
-    getCompletionPct: function(profileSysId) {
-        var missing=this.getMissingFields(profileSysId).length;
-        var total=this.requiredFields.length;
-        return Math.round(((total-missing)/total)*100);
-    },
+
     type: 'ProfileManager'
 };
