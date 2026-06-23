@@ -1,0 +1,43 @@
+{
+  "properties": [
+    {
+      "name": "x_auto_apply.jooble_api_key",
+      "value": "",
+      "description": "Jooble API key — get free at https://jooble.org/api/about",
+      "type": "string",
+      "private": true
+    },
+    {
+      "name": "x_auto_apply.indeed_publisher_id",
+      "value": "",
+      "description": "Indeed Publisher ID — register at https://ads.indeed.com/",
+      "type": "string",
+      "private": true
+    },
+    {
+      "name": "x_auto_apply.rapidapi_key",
+      "value": "",
+      "description": "RapidAPI key for JSearch (covers Dice, LinkedIn, Glassdoor) — https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch",
+      "type": "string",
+      "private": true
+    },
+    {
+      "name": "x_auto_apply.min_ats_score",
+      "value": "70",
+      "description": "Minimum ATS score (%) to auto-submit an application",
+      "type": "integer"
+    },
+    {
+      "name": "x_auto_apply.follow_up_days",
+      "value": "7",
+      "description": "Days after application before follow-up reminder is sent",
+      "type": "integer"
+    },
+    {
+      "name": "x_auto_apply.scan_interval_hours",
+      "value": "6",
+      "description": "How often (hours) the job board scanner runs",
+      "type": "integer"
+    }
+  ]
+}
