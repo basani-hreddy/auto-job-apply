@@ -1,0 +1,85 @@
+{
+  "tables": [
+    {
+      "name": "x_auto_apply_profile",
+      "label": "Job Seeker Profile",
+      "fields": [
+        {"name":"user","type":"reference","ref_table":"sys_user"},
+        {"name":"full_name","type":"string"},
+        {"name":"email","type":"string"},
+        {"name":"phone","type":"string"},
+        {"name":"location","type":"string"},
+        {"name":"linkedin_url","type":"url"},
+        {"name":"summary","type":"journal_input"},
+        {"name":"skills","type":"journal_input"},
+        {"name":"experience","type":"journal_input"},
+        {"name":"education","type":"string"},
+        {"name":"certifications","type":"string"},
+        {"name":"base_resume","type":"journal_input"},
+        {"name":"work_auth","type":"string"},
+        {"name":"years_exp","type":"integer"},
+        {"name":"desired_salary","type":"string"},
+        {"name":"job_type","type":"string"},
+        {"name":"target_role","type":"string"},
+        {"name":"active","type":"boolean","default":true}
+      ]
+    },
+    {
+      "name":"x_auto_apply_job",
+      "label":"Job Listing",
+      "fields":[
+        {"name":"profile","type":"reference","ref_table":"x_auto_apply_profile"},
+        {"name":"title","type":"string"},
+        {"name":"company","type":"string"},
+        {"name":"location","type":"string"},
+        {"name":"description","type":"journal_input"},
+        {"name":"apply_url","type":"url"},
+        {"name":"salary_range","type":"string"},
+        {"name":"source_board","type":"string"},
+        {"name":"posted_date","type":"string"},
+        {"name":"ats_score","type":"integer"},
+        {"name":"ats_missing_preview","type":"string"},
+        {"name":"status","type":"string","choices":["new","ready_to_apply","needs_optimization","applied","rejected"]}
+      ]
+    },
+    {
+      "name":"x_auto_apply_resume",
+      "label":"ATS-Optimized Resume",
+      "fields":[
+        {"name":"job","type":"reference","ref_table":"x_auto_apply_job"},
+        {"name":"profile","type":"reference","ref_table":"x_auto_apply_profile"},
+        {"name":"ats_score","type":"integer"},
+        {"name":"matched_keywords","type":"string"},
+        {"name":"missing_keywords","type":"string"},
+        {"name":"optimized_resume","type":"journal_input"},
+        {"name":"generated_on","type":"glide_date_time"}
+      ]
+    },
+    {
+      "name":"x_auto_apply_application",
+      "label":"Job Application",
+      "fields":[
+        {"name":"profile","type":"reference","ref_table":"x_auto_apply_profile"},
+        {"name":"job","type":"reference","ref_table":"x_auto_apply_job"},
+        {"name":"resume_used","type":"reference","ref_table":"x_auto_apply_resume"},
+        {"name":"status","type":"string","choices":["applied","screening","interview","offer","rejected","withdrawn","offer_accepted"]},
+        {"name":"applied_on","type":"glide_date_time"},
+        {"name":"follow_up_date","type":"glide_date_time"},
+        {"name":"follow_up_sent","type":"boolean","default":false},
+        {"name":"interview_date","type":"glide_date_time"},
+        {"name":"notes","type":"journal_input"}
+      ]
+    },
+    {
+      "name":"x_auto_apply_profile_detail",
+      "label":"Profile Detail (Q&A)",
+      "fields":[
+        {"name":"profile","type":"reference","ref_table":"x_auto_apply_profile"},
+        {"name":"field_name","type":"string"},
+        {"name":"question","type":"string"},
+        {"name":"answer","type":"journal_input"},
+        {"name":"answered","type":"boolean","default":false}
+      ]
+    }
+  ]
+}
